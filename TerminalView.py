@@ -164,12 +164,14 @@ class TerminalView:
         This is the main update function. It attempts to run at a certain number
         of frames per second, and keeps input and output synchronized.
         """
+        window = self.view.window()
         # 30 frames per second should be responsive enough
         ideal_delta = 1.0 / 30.0
+        poll_timeout = 0.0
         current = time.time()
         start_time = current
         while True:
-            self._poll_shell_output()
+            self._poll_shell_output(timeout=poll_timeout)
             self._terminal_buffer.update_view()
             self._resize_screen_if_needed()
             if not self._shell.is_running():
@@ -190,6 +192,10 @@ class TerminalView:
             time_left = ideal_delta - actual_delta
             if time_left > 0.0:
                 time.sleep(time_left)
+
+            active_views = [window.active_view_in_group(i)
+                            for i in range(window.num_groups())]
+            poll_timeout = 1.0 if self.view in active_views else 5.0
 
         # Notify user that cmd has exitted
         run_time = time.time() - start_time
